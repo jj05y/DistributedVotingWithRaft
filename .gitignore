@@ -67,5 +67,8 @@ crashlytics-build.properties
 fabric.properties
 
 .idea/
+<<<<<<< HEAD
 
 *.iml
+=======
+>>>>>>> b864decd8d7607fae2f4318e7e9f90203f94fc91
