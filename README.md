@@ -3,11 +3,14 @@
 - Clients will communicate with server
 - The leader server must publish itself so the client can use it
 
-- There will be just one vote endpoint
+- There will be just one vote endpoint published
   - voting done via an IVotingService with one method castVote(String/Int candidate);
 
 - Each server will have to publish itself for raft too to allow inter server communication
 - Server "chat" needs to be defined, ie, what communication is needed between servers
+  - assigning the 'leader'
+  - heartbeat
+  - consensus
 
 
 ## Each server will have:
@@ -19,4 +22,4 @@
 - The controller will be responsible for maintaining the transaction log, aswell as carrying out transactions
 
 ## Each client
-- will just grab an instace of IVoteServer from the published endpoint and cast votes :)
+- will just grab an instace of IVotingService from the published endpoint and cast votes :)
