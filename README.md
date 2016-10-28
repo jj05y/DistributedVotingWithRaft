@@ -1,4 +1,4 @@
-## DistributedVotingWithRaft
+# DistributedVotingWithRaft
 
 - Clients will communicate with server
 - The leader server must publish itself so the client can use it
@@ -10,12 +10,13 @@
 - Server "chat" needs to be defined, ie, what communication is needed between servers
 
 
-# Each server will have:
-	- A data base with controller (wrapper)
-	- A Jax-Ws implementation that will:
-	  - Communicate with other servers
-	  - Potentially recieve votes (if leader)
-	  - Communicate transactions with it's own controller.
-	- The controller will be responsible for maintaining the transaction log, aswell as carrying out transactions
+## Each server will have:
+- A data base with controller (wrapper)
+- A Jax-Ws implementation that will:
+  - Communicate with other servers
+  - Potentially recieve votes (if leader)
+  - Communicate transactions with it's own controller.
+- The controller will be responsible for maintaining the transaction log, aswell as carrying out transactions
 
-- Each client will just grab an instace of IVoteServer from the published endpoint and cast votes :)
+## Each client
+- will just grab an instace of IVoteServer from the published endpoint and cast votes :)
