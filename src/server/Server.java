@@ -93,18 +93,23 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         //need to tell the other servers that we're alive
         for (Server s : Registry.SERVERS.values()) {
             if (s != this) {
-                String whoRecieved = s.recieveHeartBeat();
+                //TODO send data with heart beat
+                String whoRecieved = s.recieveHeartBeat(null);
                 System.out.println(name + ": knows that " + whoRecieved + " recieved the heart beat");
             }
+            //TODO upon ackknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
         }
 
     }
 
-    public String recieveHeartBeat() {
+    public String recieveHeartBeat(Object data) {
+        //TODO stage data for commit to DB
         System.out.println(name + ": recieved the heart beat");
         resetElectionTimer();
         return name;
     }
+
+    //TODO write method for commit Data to DB
 
     private void resetElectionTimer() {
         electionTimer.interrupt();
