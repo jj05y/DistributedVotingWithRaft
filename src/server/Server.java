@@ -62,6 +62,10 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
             //I am now the leader!!! must start heat beat or my followers will try and take over :(
             heartBeat = new Thread(new HeartBeat(this));
             heartBeat.start();
+        } else {
+            //something went wrong, back into the running,
+            state = State.FOLLOWER;
+            resetElectionTimer();
         }
 
     }
