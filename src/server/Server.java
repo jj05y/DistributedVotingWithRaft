@@ -12,6 +12,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
 
     private static int PULSE = 250;
     private Server leader;
+
     private enum State{CANDIDATE, LEADER, FOLLOWER};
     private State state;
     private Thread electionTimer;
@@ -21,6 +22,10 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
 
     public Server(String name) {
         this.name = name;
+    }
+
+
+    public void startServer() {
         state = State.CANDIDATE;
         electionTimer = new Thread(new ElectionTimer(this));
         electionTimer.start();

@@ -14,5 +14,9 @@ public class ElectionTimerTest {
         Registry.SERVERS.put("Bob", new Server("Bob"));
         Registry.SERVERS.put("Frank", new Server("Frank"));
 
+        for (Server s : Registry.SERVERS.values()) {
+            s.startServer();
+        }
+
     }
 }
