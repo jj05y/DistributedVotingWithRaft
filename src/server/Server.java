@@ -26,7 +26,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
 
 
     public void startServer() {
-        state = State.CANDIDATE;
+        state = State.FOLLOWER;
         electionTimer = new Thread(new ElectionTimer(this));
         electionTimer.start();
     }
@@ -38,7 +38,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         System.out.println(name + ": Election timer up");
         //request votes
 
-        state =State.CANDIDATE;
+        state = State.CANDIDATE;
         System.out.println(name + ": is now candidate");
         //new term!
         term++;
@@ -52,26 +52,28 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         if (numVotes > Registry.SERVERS.size()/2) {
             System.out.println(name + ": has majority");
 
+            //Winner winner chicken dinner
             state = State.LEADER;
             System.out.println(name + ": is now leader for new term " + term);
             //notify the other servers
             for (Server s : Registry.SERVERS.values()) {
                 if (s != this) s.defineLeader(this);
             }
+            //I am now the leader!!! must start heat beat or my followers will try and take over :(
+            heartBeat = new Thread(new HeartBeat(this));
+            heartBeat.start();
         }
 
-        //I am now the leader!!! must start heat beat or my followers will try and take over :(
-        heartBeat = new Thread(new HeartBeat(this));
-        heartBeat.start();
+
 
 
     }
 
     public int requestVote(int term) {
-        //if I havent voted in the resting servers term return a vote
+        //if I havent voted in the requesting servers term return a vote
         if (this.term < term) {
-            //increment term to stop any more voting
             System.out.println(name + ": voted in term " + this.term);
+            //increment term to stop any more voting requests
             this.term++;
             return 1;
         }
@@ -81,7 +83,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
     public void defineLeader(Server s) {
         leader = s;
         resetElectionTimer();
-        state = State.CANDIDATE;
+        state = State.FOLLOWER;
     }
 
     public void beatHeart() {
@@ -145,6 +147,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         @Override
         public void run() {
             try {
+                //TODO while true cos a heart should beat for ever
                 int i = 0;
                 while (i++ < 3) {
                     Thread.sleep(PULSE);
