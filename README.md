@@ -7,7 +7,7 @@
   - voting done via an IVotingService with one method castVote(String/Int candidate);
 
 - Each server will have to publish itself for raft too to allow inter server communication
-- Server "chat" needs to be defined, ie, what communication is needed between servers
+- server.server "chat" needs to be defined, ie, what communication is needed between servers
   - assigning the 'leader'
   - heartbeat
   - consensus
