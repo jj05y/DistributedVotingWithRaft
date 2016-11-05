@@ -64,9 +64,6 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
             heartBeat.start();
         }
 
-
-
-
     }
 
     public int requestVote(int term) {
@@ -75,6 +72,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
             System.out.println(name + ": voted in term " + this.term);
             //increment term to stop any more voting requests
             this.term++;
+            resetElectionTimer();
             return 1;
         }
         return 0;
