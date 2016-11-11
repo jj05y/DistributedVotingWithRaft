@@ -11,6 +11,7 @@ import javax.xml.ws.Service;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.List;
@@ -22,8 +23,8 @@ import java.util.Vector;
  */
 
 @WebService(name="IServer")
-public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer {
-    private List<Endpoint> serverEndpoints;
+public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer, IOtherServerCheckerCallBack {
+    public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
     private List<IServer> servers;
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
@@ -39,25 +40,19 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
     public Server(String name) {
         this.name = name;
-        serverEndpoints = new Vector<>();
         servers = new Vector<>();
         getListFromJguddi();
-        resolveOtherServers();
+        (new Thread(new OtherServerChecker(this))).start();
         startServer();
     }
 
     private void resolveOtherServers() {
-        try {
-            for (Endpoint ep : serverEndpoints) {
-                Service service = Service.create(new URL(ep.getUrl()), new QName(ep.getqName(), ep.getQname2()));
-                servers.add(service.getPort(IServer.class));
-            }
-        } catch(MalformedURLException mue) {
-            System.out.println("Bad Url::");
-        }
+
     }
 
-    private void getListFromJguddi() {
+    public void getListFromJguddi() {
+        List<Endpoint> serverEndpoints = new Vector<>();
+
         java.rmi.registry.Registry registry = null;
         try {
             registry = LocateRegistry.getRegistry();
@@ -67,13 +62,26 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         try {
             IJguddiService jguddi = null;
             for (String service : registry.list()) {
+                System.out.println("looking up " + service);
                 jguddi = (IJguddiService) registry.lookup(service);
             }
             if (jguddi != null) serverEndpoints = jguddi.getEndpoints();
         } catch(RemoteException re) {
-
+            System.out.println("remote exception");
         } catch (NotBoundException ne) {
+            System.out.println("not bound exception");
 
+        }
+
+        //get the list of servers from the list of end points
+        System.out.println("here's the endpoints " + serverEndpoints);
+        try {
+            for (Endpoint ep : serverEndpoints) {
+                Service service = Service.create(new URL(ep.getUrl()), new QName(ep.getqName(), ep.getQname2()));
+                servers.add(service.getPort(IServer.class));
+            }
+        } catch(MalformedURLException mue) {
+            System.out.println("Bad Url::");
         }
     }
 
@@ -140,7 +148,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         for (IServer s : servers) {
             if (s != this) {
                 //TODO send data with heart beat
-                String whoRecieved = s.recieveHeartBeat(null);
+                String whoRecieved = null;
+                try {
+                    whoRecieved = s.recieveHeartBeat(null);
+                } catch (RemoteException e) {
+                    System.out.println(name + " heartbeat fail");
+                }
                 System.out.println(name + ": knows that " + whoRecieved + " recieved the heart beat");
             }
             //TODO upon ackknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
@@ -203,6 +216,27 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
                 while (i++ < 3) {
                     Thread.sleep(PULSE);
                     context.beatHeart();
+                }
+            } catch (InterruptedException e) {
+                //TODO do i need to handle?
+            }
+        }
+    }
+
+    private class OtherServerChecker implements Runnable {
+
+        IOtherServerCheckerCallBack context;
+
+        public OtherServerChecker(IOtherServerCheckerCallBack context) {
+            this.context = context;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    context.getListFromJguddi();
+                    Thread.sleep(OTHER_SERVER_CHECK_PAUSE);
                 }
             } catch (InterruptedException e) {
                 //TODO do i need to handle?
