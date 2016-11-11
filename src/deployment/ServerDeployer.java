@@ -1,6 +1,7 @@
 package deployment;
 
 import jguddi.IJguddiService;
+import jguddi.JguddiService;
 import server.IServer;
 import server.Server;
 
@@ -22,10 +23,17 @@ public class ServerDeployer {
     }
 
     public static void main(String[] args) {
-        Random portRandomise = new Random();
-        String name = "Ted" + portRandomise.nextInt(100);
 
-        int port = portRandomise.nextInt(20000) + 30000;
+        Random rand = new Random();
+
+        String name;
+        if (args.length == 1) {
+            name = args[0];
+        } else {
+            name = "Server" + rand.nextInt(10000);
+        }
+
+        int port = rand.nextInt(20000) + 30000;
         String endpoint = "http://localhost:" + port + "/RaftServer/" + name;
         Endpoint.publish(endpoint, new Server(name));
         System.out.println("Published " + name + " on " + endpoint);
@@ -45,9 +53,9 @@ public class ServerDeployer {
 
         //bind jguddi to the registy
 
-        IServer server = null;
+        IJguddiService server = null;
         try {
-            server = (IServer) UnicastRemoteObject.exportObject(new Server(name), 0);
+            server = (IJguddiService) UnicastRemoteObject.exportObject(new JguddiService(), 0);
             registry.bind("jguddi", server);
 
         } catch (RemoteException e) {
@@ -66,7 +74,7 @@ public class ServerDeployer {
                     String url = endpoint + "?wsdl";
                     String qname = "http://server/";
                     String qname2 = "ServerService";
-                    jguddiService.addEndpoint(new jguddi.Endpoint(publishedTo, url, qname, qname2));
+                    jguddiService.addEndpoint(endpoint);
 
                 }
             }

@@ -1,17 +1,14 @@
 package server;
 
-import jguddi.Endpoint;
 import jguddi.IJguddiService;
-import jguddi.JguddiService;
-import registry.Registry;
 
 import javax.jws.WebService;
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
+import javax.xml.ws.WebServiceException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.NotBoundException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.List;
@@ -22,26 +19,29 @@ import java.util.Vector;
  * Created by joe on 05/11/16.
  */
 
-@WebService(name="IServer")
+@WebService(name = "IServer")
 public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer, IOtherServerCheckerCallBack {
     public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
     private List<IServer> servers;
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
 
-    private enum State{CANDIDATE, LEADER, FOLLOWER};
+    private enum State {CANDIDATE, LEADER, FOLLOWER}
+
+    ;
     private State state;
     private Thread electionTimer;
     private Thread heartBeat;
     private int term;
     private String name;
 
-    public Server() {}
+    public Server() {
+    }
 
     public Server(String name) {
         this.name = name;
         servers = new Vector<>();
-        getListFromJguddi();
+        getServersFromJguddi();
         (new Thread(new OtherServerChecker(this))).start();
         startServer();
     }
@@ -50,8 +50,8 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
     }
 
-    public void getListFromJguddi() {
-        List<Endpoint> serverEndpoints = new Vector<>();
+    public void getServersFromJguddi() {
+        List<String> serverEndpoints = new Vector<>();
 
         java.rmi.registry.Registry registry = null;
         try {
@@ -62,27 +62,53 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         try {
             IJguddiService jguddi = null;
             for (String service : registry.list()) {
-                System.out.println("looking up " + service);
                 jguddi = (IJguddiService) registry.lookup(service);
             }
             if (jguddi != null) serverEndpoints = jguddi.getEndpoints();
-        } catch(RemoteException re) {
+        } catch (RemoteException re) {
             System.out.println("remote exception");
         } catch (NotBoundException ne) {
-            System.out.println("not bound exception");
+            System.out.println("Service Not Bound, server is dead");
 
         }
-
         //get the list of servers from the list of end points
-        System.out.println("here's the endpoints " + serverEndpoints);
+        servers.clear();
         try {
-            for (Endpoint ep : serverEndpoints) {
-                Service service = Service.create(new URL(ep.getUrl()), new QName(ep.getqName(), ep.getQname2()));
-                servers.add(service.getPort(IServer.class));
+            Vector<String> deadEndpoints = new Vector<>();
+            for (String ep : serverEndpoints) {
+                try {
+                    String url = ep + "?wsdl";
+                    String qname = "http://server/";
+                    String qname2 = "ServerService";
+                    Service service = Service.create(new URL(url), new QName(qname, qname2));
+                    servers.add(service.getPort(IServer.class));
+                } catch (WebServiceException wse) {
+                    System.out.println("Web service no longer exists, must be dead");
+                    deadEndpoints.add(ep);
+                }
             }
-        } catch(MalformedURLException mue) {
+
+            //clean up
+            try {
+                IJguddiService jguddi = null;
+                for (String service : registry.list()) {
+                    jguddi = (IJguddiService) registry.lookup(service);
+                }
+                for (String deadEnpoint : deadEndpoints) {
+                    System.out.println("Removing Dead Endpoint " + deadEnpoint);
+                    if (jguddi != null) jguddi.removeEndpoint(deadEnpoint);
+                }
+            } catch (RemoteException re) {
+                System.out.println("remote exception");
+            } catch (NotBoundException ne) {
+                System.out.println("Service Not Bound, server is dead");
+
+            }
+
+        } catch (MalformedURLException mue) {
             System.out.println("Bad Url::");
         }
+        System.out.println("There are now " + servers.size() + " sever(s)");
     }
 
 
@@ -93,29 +119,34 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     }
 
 
-
     @Override
     public void electionTimerUp() {
-        System.out.println(name + ": Election timer up");
+        System.out.println("Term: " + term + "\t" + name + ": Election timer up");
         //request votes
 
         state = State.CANDIDATE;
-        System.out.println(name + ": is now candidate");
+        System.out.println("Term: " + term + "\t" + name + ": is now candidate");
         //new term!
         term++;
         int numVotes = 0;
-        for (IServer s : servers) {
-            numVotes += s.requestVote(term);
+        synchronized (servers) {
+            for (IServer s : servers) {
+                try {
+                    numVotes += s.requestVote(term);
+                } catch (WebServiceException wse) {
+                    System.out.println("Web service no longer exists, must be dead");
+                }
+            }
         }
 
         //check for majority
-        System.out.println(name + ": recieved " + numVotes + " votes");
-        if (numVotes > servers.size()/2) {
-            System.out.println(name + ": has majority");
+        System.out.println(name + ": recieved " + numVotes + " votes. For majority need more than " + (servers.size() / 2));
+        if (numVotes > servers.size() / 2) {
+            System.out.println("Term: " + term + "\t" + name + ": has majority");
 
             //Winner winner chicken dinner
             state = State.LEADER;
-            System.out.println(name + ": is now leader for new term " + term);
+            System.out.println("Term: " + term + "\t" + name + ": is now leader for new term " + term);
 
             //I am now the leader!!! must start heat beat or my followers will try and take over :(
             heartBeat = new Thread(new HeartBeat(this));
@@ -131,9 +162,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     public int requestVote(int term) {
         //if I havent voted in the requesting serverEndpoints term return a vote
         if (this.term < term) {
-            System.out.println(name + ": voted in term " + this.term);
-            //increment term to stop any more voting requests
-            this.term++;
+            System.out.println("Term: " + term + "\t" + name + ": voted in term " + term);
+            //catch up term to the current
+            this.term = term;
             resetElectionTimer();
             return 1;
         }
@@ -142,30 +173,38 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
     public void beatHeart() {
 
-        System.out.println(name + ": badump");
+        System.out.println("Term: " + term + "\t" + name + ": badump");
 
         //need to tell the other serverEndpoints that we're alive
-        for (IServer s : servers) {
-            if (s != this) {
-                //TODO send data with heart beat
-                String whoRecieved = null;
+        synchronized (servers) {
+            for (IServer s : servers) {
                 try {
-                    whoRecieved = s.recieveHeartBeat(null);
-                } catch (RemoteException e) {
-                    System.out.println(name + " heartbeat fail");
+                    //TODO send data with heart beat
+                    String whoRecieved = null;
+                    whoRecieved = s.recieveHeartBeat(null, name);
+                    if (!whoRecieved.equals(name)) {
+                        System.out.println("Term: " + term + "\t" + name + ": knows that " + whoRecieved + " recieved the heart beat");
+                    }
+                } catch (WebServiceException wse) {
+                    System.out.println("Web service no longer exists, must be dead");
+
                 }
-                System.out.println(name + ": knows that " + whoRecieved + " recieved the heart beat");
+
             }
-            //TODO upon ackknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
+            //TODO upon acknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
         }
 
     }
 
-    public String recieveHeartBeat(Object data) {
-        //TODO stage data for commit to DB
-        System.out.println(name + ": recieved the heart beat");
-        resetElectionTimer();
+    public String recieveHeartBeat(Object data, String sentBy) {
+        if (!sentBy.equals(name)) {
+            //TODO stage data for commit to DB
+            System.out.println("Term: " + term + "\t" + name + ": recieved the heart beat" + " from " + sentBy);
+            resetElectionTimer();
+        }
         return name;
+
+
     }
 
     //TODO write method for commit Data to DB
@@ -190,7 +229,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             try {
                 Random rand = new Random();
                 int time = rand.nextInt(RAND_ELEC_TIME) + RAND_ELEC_TIME;
-                Thread.sleep((long)time);
+                Thread.sleep((long) time);
                 context.electionTimerUp();
             } catch (InterruptedException e) {
                 // no need to handle, I think that if the thread gets interupted,
@@ -213,7 +252,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             try {
                 //TODO while true cos a heart should beat for ever
                 int i = 0;
-                while (i++ < 3) {
+                while (i++ < 30) {
                     Thread.sleep(PULSE);
                     context.beatHeart();
                 }
@@ -235,7 +274,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         public void run() {
             try {
                 while (true) {
-                    context.getListFromJguddi();
+                    context.getServersFromJguddi();
                     Thread.sleep(OTHER_SERVER_CHECK_PAUSE);
                 }
             } catch (InterruptedException e) {

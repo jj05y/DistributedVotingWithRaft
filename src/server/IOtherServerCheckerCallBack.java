@@ -5,6 +5,6 @@ package server;
  */
 public interface IOtherServerCheckerCallBack {
 
-    void getListFromJguddi();
+    void getServersFromJguddi();
 
 }

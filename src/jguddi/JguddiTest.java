@@ -28,9 +28,9 @@ public class JguddiTest {
                 for (String serviceTag : registry.list()) {
                     IJguddiService jguddiService = (IJguddiService) registry.lookup(serviceTag);
                     System.out.println(serviceTag);
-                    jguddiService.addEndpoint(new Endpoint("Hi", "Http://hotpotato", "bollox",""));
+                    jguddiService.addEndpoint("fake end point");
                     System.out.println(jguddiService.getEndpoints().size());
-                    for (Endpoint ep : jguddiService.getEndpoints()) {
+                    for (String ep : jguddiService.getEndpoints()) {
                         System.out.println(ep);
                     }
                 }
