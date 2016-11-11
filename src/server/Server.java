@@ -10,7 +10,8 @@ import java.util.Random;
 public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
 
 
-    private static int PULSE = 250;
+    public static final int RAND_ELEC_TIME = 1500;
+    private static int PULSE = 500;
     private Server leader;
 
     private enum State{CANDIDATE, LEADER, FOLLOWER};
@@ -132,7 +133,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         public void run() {
             try {
                 Random rand = new Random();
-                int time = rand.nextInt(1000) + 1000;
+                int time = rand.nextInt(RAND_ELEC_TIME) + RAND_ELEC_TIME;
                 Thread.sleep((long)time);
                 context.electionTimerUp();
             } catch (InterruptedException e) {
