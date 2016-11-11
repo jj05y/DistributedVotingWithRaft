@@ -22,13 +22,12 @@ import java.util.Vector;
 @WebService(name = "IServer")
 public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer, IOtherServerCheckerCallBack {
     public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
-    private List<IServer> servers;
+    private List<IServer> servers;      //Other servers on Jguddi registry
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
 
     private enum State {CANDIDATE, LEADER, FOLLOWER}
 
-    ;
     private State state;
     private Thread electionTimer;
     private Thread heartBeat;
@@ -46,10 +45,6 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         startServer();
     }
 
-    private void resolveOtherServers() {
-
-    }
-
     public void getServersFromJguddi() {
         List<String> serverEndpoints = new Vector<>();
 
@@ -59,7 +54,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         } catch (RemoteException e) {
             System.out.println("WARNING: Failed to get or create RMI Registry");
         }
-        try {
+        try {   //TODO: when there's only one server this will constantly spew remoteExceptions, handle?
             IJguddiService jguddi = null;
             for (String service : registry.list()) {
                 jguddi = (IJguddiService) registry.lookup(service);
@@ -69,7 +64,6 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             System.out.println("remote exception");
         } catch (NotBoundException ne) {
             System.out.println("Service Not Bound, server is dead");
-
         }
         //get the list of servers from the list of end points
         servers.clear();
@@ -102,7 +96,6 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
                 System.out.println("remote exception");
             } catch (NotBoundException ne) {
                 System.out.println("Service Not Bound, server is dead");
-
             }
 
         } catch (MalformedURLException mue) {
@@ -138,6 +131,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
                 }
             }
         }
+        numVotes++; //Vote for myself
 
         //check for majority
         System.out.println(name + ": recieved " + numVotes + " votes. For majority need more than " + (servers.size() / 2));
