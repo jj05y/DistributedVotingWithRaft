@@ -8,16 +8,27 @@ import java.io.Serializable;
 public class Endpoint implements Serializable{
     private String publishedTo;
     private String url;
-    private String qName;
+    private String qname;
+
+    public String getQname2() {
+        return qname2;
+    }
+
+    public void setQname2(String qname2) {
+        this.qname2 = qname2;
+    }
+
+    private String qname2;
 
     public Endpoint() {
     }
 
-    public Endpoint(String publishedTo, String url, String qName) {
+    public Endpoint(String publishedTo, String url, String qname, String qname2) {
 
         this.publishedTo = publishedTo;
         this.url = url;
-        this.qName = qName;
+        this.qname = qname;
+        this.qname2 = qname2;
     }
 
     public String getPublishedTo() {
@@ -37,11 +48,11 @@ public class Endpoint implements Serializable{
     }
 
     public String getqName() {
-        return qName;
+        return qname;
     }
 
     public void setqName(String qName) {
-        this.qName = qName;
+        this.qname = qName;
     }
 
     @Override
@@ -49,7 +60,7 @@ public class Endpoint implements Serializable{
         return "Endpoint{" +
             "publishedTo='" + publishedTo + '\'' +
             ", url='" + url + '\'' +
-            ", qName='" + qName + '\'' +
+            ", qName='" + qname + '\'' +
             '}';
     }
 }

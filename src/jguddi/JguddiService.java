@@ -15,7 +15,6 @@ public class JguddiService implements IJguddiService {
 
     @Override
     public void addEndpoint(Endpoint ep) {
-        System.out.println("adding" + ep);
         this.endpoints.add(ep);
     }
 

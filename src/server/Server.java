@@ -1,18 +1,32 @@
 package server;
 
+import jguddi.Endpoint;
+import jguddi.IJguddiService;
+import jguddi.JguddiService;
 import registry.Registry;
 
+import javax.jws.WebService;
+import javax.xml.namespace.QName;
+import javax.xml.ws.Service;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.util.List;
 import java.util.Random;
+import java.util.Vector;
 
 /**
  * Created by joe on 05/11/16.
  */
-public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
 
-
+@WebService(name="IServer")
+public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer {
+    private List<Endpoint> serverEndpoints;
+    private List<IServer> servers;
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
-    private Server leader;
 
     private enum State{CANDIDATE, LEADER, FOLLOWER};
     private State state;
@@ -21,8 +35,46 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
     private int term;
     private String name;
 
+    public Server() {}
+
     public Server(String name) {
         this.name = name;
+        serverEndpoints = new Vector<>();
+        servers = new Vector<>();
+        getListFromJguddi();
+        resolveOtherServers();
+        startServer();
+    }
+
+    private void resolveOtherServers() {
+        try {
+            for (Endpoint ep : serverEndpoints) {
+                Service service = Service.create(new URL(ep.getUrl()), new QName(ep.getqName(), ep.getQname2()));
+                servers.add(service.getPort(IServer.class));
+            }
+        } catch(MalformedURLException mue) {
+            System.out.println("Bad Url::");
+        }
+    }
+
+    private void getListFromJguddi() {
+        java.rmi.registry.Registry registry = null;
+        try {
+            registry = LocateRegistry.getRegistry();
+        } catch (RemoteException e) {
+            System.out.println("WARNING: Failed to get or create RMI Registry");
+        }
+        try {
+            IJguddiService jguddi = null;
+            for (String service : registry.list()) {
+                jguddi = (IJguddiService) registry.lookup(service);
+            }
+            if (jguddi != null) serverEndpoints = jguddi.getEndpoints();
+        } catch(RemoteException re) {
+
+        } catch (NotBoundException ne) {
+
+        }
     }
 
 
@@ -44,22 +96,19 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         //new term!
         term++;
         int numVotes = 0;
-        for (Server s : Registry.SERVERS.values()) {
+        for (IServer s : servers) {
             numVotes += s.requestVote(term);
         }
 
         //check for majority
         System.out.println(name + ": recieved " + numVotes + " votes");
-        if (numVotes > Registry.SERVERS.size()/2) {
+        if (numVotes > servers.size()/2) {
             System.out.println(name + ": has majority");
 
             //Winner winner chicken dinner
             state = State.LEADER;
             System.out.println(name + ": is now leader for new term " + term);
-            //notify the other servers
-            for (Server s : Registry.SERVERS.values()) {
-                if (s != this) s.defineLeader(this);
-            }
+
             //I am now the leader!!! must start heat beat or my followers will try and take over :(
             heartBeat = new Thread(new HeartBeat(this));
             heartBeat.start();
@@ -72,7 +121,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
     }
 
     public int requestVote(int term) {
-        //if I havent voted in the requesting servers term return a vote
+        //if I havent voted in the requesting serverEndpoints term return a vote
         if (this.term < term) {
             System.out.println(name + ": voted in term " + this.term);
             //increment term to stop any more voting requests
@@ -83,18 +132,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack {
         return 0;
     }
 
-    public void defineLeader(Server s) {
-        leader = s;
-        resetElectionTimer();
-        state = State.FOLLOWER;
-    }
-
     public void beatHeart() {
 
         System.out.println(name + ": badump");
 
-        //need to tell the other servers that we're alive
-        for (Server s : Registry.SERVERS.values()) {
+        //need to tell the other serverEndpoints that we're alive
+        for (IServer s : servers) {
             if (s != this) {
                 //TODO send data with heart beat
                 String whoRecieved = s.recieveHeartBeat(null);
