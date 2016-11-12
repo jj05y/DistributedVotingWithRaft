@@ -125,13 +125,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         synchronized (servers) {
             for (IServer s : servers) {
                 try {
-                    numVotes += s.requestVote(term);
+                    numVotes += s.requestVote(term, this.name);
                 } catch (WebServiceException wse) {
                     System.out.println("Web service no longer exists, must be dead");
                 }
             }
         }
-        numVotes++; //Vote for myself
 
         //check for majority
         System.out.println(name + ": recieved " + numVotes + " votes. For majority need more than " + (servers.size() / 2));
@@ -153,15 +152,25 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
     }
 
-    public int requestVote(int term) {
+    @Override
+    public int requestVote(int term, String name) {
         //if I havent voted in the requesting serverEndpoints term return a vote
-        if (this.term < term) {
-            System.out.println("Term: " + term + "\t" + name + ": voted in term " + term);
-            //catch up term to the current
-            this.term = term;
-            resetElectionTimer();
+
+        // If I'm voting for myself
+        if (name.equals(this.name)){
+            System.out.println("Term: " + term + "\t" + this.name + ": voted for themselves");
             return 1;
+        } else {    // If I'm not voting for itself
+            if (this.term < term) {
+                System.out.println(name + " is asking " + this.name + " to vote for them");
+                System.out.println("Term: " + term + "\t" + this.name + ": voted for " + name);
+                //catch up term to the current
+                this.term = term;
+                resetElectionTimer();
+                return 1;
+            }
         }
+
         return 0;
     }
 
