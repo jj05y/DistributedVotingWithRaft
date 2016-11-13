@@ -23,9 +23,9 @@ public class ServerDeployer {
     }
 
     public static void main(String[] args) {
-
         Random rand = new Random();
 
+        //Get the server name from arguments
         String name;
         if (args.length == 1) {
             name = args[0];
@@ -33,7 +33,7 @@ public class ServerDeployer {
             name = "Server" + rand.nextInt(10000);
         }
 
-        int port = rand.nextInt(20000) + 30000;
+        int port = rand.nextInt(20000) + 30000; //Assign random port to the server
         String endpoint = "http://localhost:" + port + "/RaftServer/" + name;
         Endpoint.publish(endpoint, new Server(name));
         System.out.println("Published " + name + " on " + endpoint);
@@ -52,7 +52,6 @@ public class ServerDeployer {
         }
 
         //bind jguddi to the registy
-
         IJguddiService server = null;
         try {
             server = (IJguddiService) UnicastRemoteObject.exportObject(new JguddiService(), 0);
@@ -75,7 +74,6 @@ public class ServerDeployer {
                     String qname = "http://server/";
                     String qname2 = "ServerService";
                     jguddiService.addEndpoint(endpoint);
-
                 }
             }
         } catch (RemoteException re) {

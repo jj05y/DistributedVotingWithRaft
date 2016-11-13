@@ -9,8 +9,7 @@ import java.rmi.RemoteException;
  */
 @WebService(name="IServer")
 public interface IServer {
-    int requestVote(int term);
+    int requestVote(int term, String name);
 
     String recieveHeartBeat(Object o, String sentBy);
-
 }
