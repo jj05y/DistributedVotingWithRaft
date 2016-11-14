@@ -19,9 +19,6 @@ import java.util.Random;
  */
 public class ServerDeployer {
 
-    public ServerDeployer() {
-    }
-
     static IJguddiService staticService;
 
     public static void main(String[] args) {
@@ -44,7 +41,8 @@ public class ServerDeployer {
         Registry registry = null;
         try {
             registry = LocateRegistry.createRegistry(1099);
-            //bind jguddi to the registy
+
+            //bind jguddi to the new registy
             IJguddiService jguddiServer = null;
             try {
                 if (registry!= null) {
