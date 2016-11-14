@@ -61,7 +61,8 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             }
             if (jguddi != null) serverEndpoints = jguddi.getEndpoints();
         } catch (RemoteException re) {
-            System.out.println("remote exception");
+            System.out.println("remote exception in getting jguddi");
+          //  re.printStackTrace();
         } catch (NotBoundException ne) {
             System.out.println("Service Not Bound, server is dead");
         }
@@ -93,7 +94,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
                     if (jguddi != null) jguddi.removeEndpoint(deadEnpoint);
                 }
             } catch (RemoteException re) {
-                System.out.println("remote exception");
+                System.out.println("remote exception in clearing dead enpoints");
             } catch (NotBoundException ne) {
                 System.out.println("Service Not Bound, server is dead");
             }

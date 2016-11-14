@@ -22,6 +22,8 @@ public class ServerDeployer {
     public ServerDeployer() {
     }
 
+    static IJguddiService staticService;
+
     public static void main(String[] args) {
         Random rand = new Random();
 
@@ -42,6 +44,25 @@ public class ServerDeployer {
         Registry registry = null;
         try {
             registry = LocateRegistry.createRegistry(1099);
+            //bind jguddi to the registy
+            IJguddiService jguddiServer = null;
+            try {
+                if (registry!= null) {
+                    staticService = new JguddiService();
+                    jguddiServer = (IJguddiService) UnicastRemoteObject.exportObject(staticService, 0);
+                    if (jguddiServer != null) registry.bind("jguddi", jguddiServer);
+                    System.out.println("bound jguddi");
+                }else {
+                    System.out.println("registry null");
+                }
+            } catch (RemoteException e) {
+                System.out.println("remote exception from deployer");
+                e.printStackTrace();
+            } catch (AlreadyBoundException e) {
+                System.out.println("alreaedy bound in deployer");
+            }
+
+
         } catch (RemoteException e) {
             try {
                 registry = LocateRegistry.getRegistry();
@@ -51,35 +72,23 @@ public class ServerDeployer {
             }
         }
 
-        //bind jguddi to the registy
-        IJguddiService server = null;
-        try {
-            server = (IJguddiService) UnicastRemoteObject.exportObject(new JguddiService(), 0);
-            registry.bind("jguddi", server);
-
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (AlreadyBoundException e) {
-
-        }
-
         //get jguddi and add the endpoint
         try {
             if (registry != null) {
                 for (String serviceTag : registry.list()) {
-                    System.out.println("Service from rmi registry " + serviceTag);
+                    System.out.println("Service from rmi registry: " + serviceTag);
                     IJguddiService jguddiService = (IJguddiService) registry.lookup(serviceTag);
-                    String publishedTo = endpoint;
-                    String url = endpoint + "?wsdl";
-                    String qname = "http://server/";
-                    String qname2 = "ServerService";
                     jguddiService.addEndpoint(endpoint);
                 }
             }
         } catch (RemoteException re) {
+            System.out.println("remote excetpion from adding end point");
             re.printStackTrace();
         } catch (NotBoundException nbe) {
-            nbe.printStackTrace();
+            System.out.println("not bound exception");
+            //nbe.printStackTrace();
         }
+
+
     }
 }
