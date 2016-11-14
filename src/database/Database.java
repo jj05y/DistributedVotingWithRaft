@@ -5,8 +5,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by edwinkeville on 09/11/2016.
@@ -14,12 +12,10 @@ import java.util.List;
 public class Database {
 
     private static String DB_FILE_NAME = "raftDB.db";
-    List<String> nameList = null;
     Statement stmt = null;
     Connection c = null;
 
     public Database() {
-        nameList = new LinkedList<String>();
         createTable();
     }
 
@@ -32,7 +28,7 @@ public class Database {
 
             stmt = c.createStatement();
             String sql = "CREATE TABLE RESULTS " +
-                    "(ID INT PRIMARY KEY     NOT NULL," +
+                    "(ID INTEGER PRIMARY KEY     NOT NULL," +
                     " NAME           TEXT    NOT NULL, " +
                     " VOTES          INT     NOT NULL)";
             stmt.executeUpdate(sql);
@@ -45,17 +41,7 @@ public class Database {
     }
 
 
-
-    public void voteFor(String name){
-            if (nameList.contains(name)) {
-                updateRecord(name);
-            }else{
-                nameList.add(name);
-                createRecord(name);
-            }
-    }
-
-
+    // make boolean
     public void createRecord(String name){
         try {
             Class.forName("org.sqlite.JDBC");
@@ -64,7 +50,7 @@ public class Database {
 
             stmt = c.createStatement();
             String sql = "INSERT INTO RESULTS (ID,NAME,VOTES) " +
-                        "VALUES ("+ nameList.size() +", '" + name + "', 1);";
+                        "VALUES (NULL , '" + name + "', 0);";
             stmt.executeUpdate(sql);
 
             stmt.close();
@@ -78,7 +64,7 @@ public class Database {
     }
 
 
-    public void updateRecord(String name)
+    public void voteFor(String name)
     {
         int votes = getVotes(name);
 
@@ -87,9 +73,8 @@ public class Database {
             c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
             c.setAutoCommit(false);
 
-            int id = nameList.indexOf(name)+1;
             stmt = c.createStatement();
-            String sql = "UPDATE RESULTS set VOTES = "+(votes+1)+" where ID="+id+";";
+            String sql = "UPDATE RESULTS set VOTES = "+(votes+1)+" where NAME=\""+name+"\";";
             stmt.executeUpdate(sql);
 
             stmt.close();
@@ -102,7 +87,6 @@ public class Database {
     }
 
     public int getVotes(String name) {
-        int id = nameList.indexOf(name)+1;
         int votesCount = 0;
         try {
             Class.forName("org.sqlite.JDBC");
@@ -110,7 +94,7 @@ public class Database {
             c.setAutoCommit(false);
 
             stmt = c.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM RESULTS where ID=" + id + ";");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM RESULTS where NAME=\""+name+"\";");
             votesCount = rs.getInt("votes");
             rs.close();
             stmt.close();
@@ -153,19 +137,15 @@ public class Database {
     public static void main (String[] args) {
         //test main
         Database db = new Database();
-        db.voteFor("sandy");
-        db.voteFor("anne");
-        db.voteFor("sandy");
-        db.printAllRecords();
-        db.voteFor("sandy");
-        db.voteFor("anne");
-        db.voteFor("sandy");
-        db.printAllRecords();
-        db.voteFor("sandy");
-        db.voteFor("anne");
-        db.voteFor("sandy");
-        System.out.println("sandy now has: "+db.getVotes("sandy"));
-        System.out.println("anne now has: "+db.getVotes("anne"));
+        db.createRecord("semannnt");
+        db.createRecord("hoops");
+        db.createRecord("boops");
+        db.voteFor("hoops");
+        db.voteFor("hoops");
+        db.voteFor("hoops");
+        db.voteFor("hoops");
+        System.out.println("sandy now has: "+db.getVotes("hoops"));
+        System.out.println("anne now has: "+db.getVotes("boops"));
 
 
 
