@@ -16,6 +16,8 @@ public class Database {
     Connection c = null;
 
     public Database() {
+        //need a delete table method
+        //deleteTable();
         createTable();
     }
 

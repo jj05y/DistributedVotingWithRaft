@@ -11,5 +11,7 @@ import java.rmi.RemoteException;
 public interface IServer {
     int requestVote(int term, String name);
 
-    String recieveHeartBeat(Object o, String sentBy);
+    String recieveHeartBeat(String data, String sentBy);
+
+    void commitStagingArea();
 }

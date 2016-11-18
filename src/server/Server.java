@@ -1,6 +1,8 @@
 package server;
 
+import database.Coordinator;
 import jguddi.IJguddiService;
+import jguddi.JguddiService;
 
 import javax.jws.WebService;
 import javax.xml.namespace.QName;
@@ -8,9 +10,12 @@ import javax.xml.ws.Service;
 import javax.xml.ws.WebServiceException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -33,13 +38,20 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     private Thread heartBeat;
     private int term;
     private String name;
+    private Coordinator coordinator;
 
     public Server() {
+        setup("Server" + (new Random()).nextInt(10000));
     }
 
     public Server(String name) {
+        setup(name);
+    }
+
+    private void setup(String name) {
         this.name = name;
         servers = new Vector<>();
+        coordinator = new Coordinator();
         getServersFromJguddi();
         (new Thread(new OtherServerChecker(this))).start();
         startServer();
@@ -51,9 +63,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         java.rmi.registry.Registry registry = null;
         try {
             registry = LocateRegistry.getRegistry();
+            System.out.println(name + " Got registry");
         } catch (RemoteException e) {
             System.out.println("WARNING: Failed to get or create RMI Registry");
+            e.printStackTrace();
         }
+
         try {   //TODO: when there's only one server this will constantly spew remoteExceptions, handle?
             IJguddiService jguddi = null;
             for (String service : registry.list()) {
@@ -180,12 +195,14 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         System.out.println("Term: " + term + "\t" + name + ": badump");
 
         //need to tell the other serverEndpoints that we're alive
+        int numberServersWhoRecieved = 0;
         synchronized (servers) {
             for (IServer s : servers) {
                 try {
                     //TODO send data with heart beat
                     String whoRecieved = null;
-                    whoRecieved = s.recieveHeartBeat(null, name);
+                    whoRecieved = s.recieveHeartBeat(coordinator.getLog(), name);
+                    numberServersWhoRecieved++;
                     if (!whoRecieved.equals(name)) {
                         System.out.println("Term: " + term + "\t" + name + ": knows that " + whoRecieved + " recieved the heart beat");
                     }
@@ -196,14 +213,20 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
             }
             //TODO upon acknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
+            if (numberServersWhoRecieved > servers.size()/2) {
+                for (IServer server : servers) {
+                    server.commitStagingArea();
+                }
+            }
         }
 
     }
 
-    public String recieveHeartBeat(Object data, String sentBy) {
+    public String recieveHeartBeat(String data, String sentBy) {
         if (!sentBy.equals(name)) {
             //TODO stage data for commit to DB
             System.out.println("Term: " + term + "\t" + name + ": recieved the heart beat" + " from " + sentBy);
+            coordinator.addToStagingArea(data);
             resetElectionTimer();
         }
         return name;
@@ -212,6 +235,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     }
 
     //TODO write method for commit Data to DB
+    public void commitStagingArea(){
+        coordinator.commitStagingArea();
+    }
 
     private void resetElectionTimer() {
         electionTimer.interrupt();
@@ -286,6 +312,39 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             }
         }
     }
+
+    private class JguddiServer implements Runnable {
+        private Registry registry;
+
+        public JguddiServer() {
+            registry = null;
+        }
+
+        @Override
+        public void run() {
+            try {
+                registry = LocateRegistry.createRegistry(1099);
+            } catch(RemoteException re) {
+                try {
+                    registry = LocateRegistry.getRegistry();
+                } catch( RemoteException e) {
+                    System.out.println("Failure gettting registry::");
+                }
+
+            }
+            try {
+                IJguddiService service = (IJguddiService) UnicastRemoteObject.exportObject(new JguddiService(), 0);
+                if (registry != null) {
+                    registry.bind("jguddi", service);
+                }
+            } catch (RemoteException e) {
+
+            } catch(AlreadyBoundException abe) {
+
+            }
+        }
+    }
+
 }
 
 
