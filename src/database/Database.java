@@ -11,24 +11,25 @@ import java.sql.Statement;
  */
 public class Database {
 
-    private static String DB_FILE_NAME = "raftDB.db";
+    private String dbFileName;
     private static String TABLE_NAME = "RESULTS";
     Statement stmt = null;
     Connection c = null;
 
-    public Database() {
+    public Database(String name) {
         //need a delete table method
         //deleteTable();
-        deleteTable();
-        createTable();
+        deleteTable(name);
+        createTable(name);
     }
 
 
-    public void createTable()
+    public void createTable(String name)
     {
+        dbFileName = name+"db.db";
         try {
             Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
+            c = DriverManager.getConnection("jdbc:sqlite:"+dbFileName);
 
             stmt = c.createStatement();
             String sql = "CREATE TABLE " +TABLE_NAME +
@@ -39,7 +40,7 @@ public class Database {
             stmt.close();
             c.close();
         } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println(" create table" +  e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
     }
@@ -49,9 +50,9 @@ public class Database {
     public void createRecord(String name){
         try {
             Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
+            c = DriverManager.getConnection("jdbc:sqlite:"+dbFileName);
             c.setAutoCommit(false);
-
+fu
             stmt = c.createStatement();
             String sql = "INSERT INTO "+ TABLE_NAME +" (ID,NAME,VOTES) " +
                         "VALUES (NULL , '" + name + "', 0);";
@@ -62,7 +63,7 @@ public class Database {
             c.close();
 
         } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println("Creating Record: "+  e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
     }
@@ -74,7 +75,7 @@ public class Database {
 
         try {
             Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
+            c = DriverManager.getConnection("jdbc:sqlite:"+dbFileName);
             c.setAutoCommit(false);
 
             stmt = c.createStatement();
@@ -85,7 +86,7 @@ public class Database {
             c.commit();
             c.close();
         } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println( "vote for" + e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
     }
@@ -94,7 +95,7 @@ public class Database {
         int votesCount = 0;
         try {
             Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
+            c = DriverManager.getConnection("jdbc:sqlite:" + dbFileName);
             c.setAutoCommit(false);
 
             stmt = c.createStatement();
@@ -104,7 +105,7 @@ public class Database {
             stmt.close();
             c.close();
         } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            System.err.println("get votes " + e.getClass().getName() + ": " + e.getMessage());
             System.exit(0);
         }
         return votesCount;
@@ -115,7 +116,7 @@ public class Database {
         String allRecords = "";
         try {
             Class.forName("org.sqlite.JDBC");
-            c = DriverManager.getConnection("jdbc:sqlite:"+ DB_FILE_NAME +"");
+            c = DriverManager.getConnection("jdbc:sqlite:"+ dbFileName);
             c.setAutoCommit(false);
 
             stmt = c.createStatement();
@@ -140,37 +141,39 @@ public class Database {
             stmt.close();
             c.close();
         } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println("print all records" +  e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
         System.out.println(allRecords);
         return allRecords;
     }
 
-    public void deleteTable(){
+    public void deleteTable(String name){
         try {
             Class.forName("org.sqlite.JDBC");
-            this.c = DriverManager.getConnection("jdbc:sqlite:" + DB_FILE_NAME + "");
+            this.c = DriverManager.getConnection("jdbc:sqlite:" +dbFileName);
             this.stmt = this.c.createStatement();
             String e = "DROP TABLE IF EXISTS "+TABLE_NAME;
+            System.out.println(e);
             this.stmt.executeUpdate(e);
             this.stmt.close();
             this.c.close();
+            System.out.println("hi");
         } catch (Exception var2) {
-            System.err.println(var2.getClass().getName() + ": " + var2.getMessage());
+            System.err.println("delete table: " + var2.getClass().getName() + ": " + var2.getMessage());
             System.exit(0);
         }
     }
 
     public void deleteDB(){
-        File file = new File(DB_FILE_NAME);
+        File file = new File(dbFileName);
         file.delete();
     }
 
 
     public static void main (String[] args) {
         //test main
-        Database db = new Database();
+        Database db = new Database("test");
         db.createRecord("semannnt");
         db.createRecord("hoops");
         db.createRecord("boops");

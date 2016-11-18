@@ -17,8 +17,8 @@ public class Coordinator {
     String[] candidates = {"Mary, Jacinta, Niamh, Holly"};
 
 
-    public Coordinator() {
-        db = new Database();
+    public Coordinator(String name) {
+        db = new Database(name);
         for (String candidate : candidates) {
             db.createRecord(candidate);
         }
@@ -40,8 +40,10 @@ public class Coordinator {
         String newLog = stagingArea;
         String toDo = (stagingArea.replace(transactionsLog, ""));
         transactionsLog = newLog;
+        System.out.println("voting for : " + toDo);
         for (String candiddate : toDo.split(",")) {
-            db.voteFor(candiddate);
+            //TODO make sure not voting for null
+           // db.voteFor(candiddate);
         }
     }
 

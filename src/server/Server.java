@@ -38,7 +38,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     private Thread heartBeat;
     private int term;
     private String name;
-    private Coordinator coordinator;
+  //  private Coordinator coordinator;
 
     public Server() {
         setup("Server" + (new Random()).nextInt(10000));
@@ -51,7 +51,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     private void setup(String name) {
         this.name = name;
         servers = new Vector<>();
-        coordinator = new Coordinator();
+   //     coordinator = new Coordinator(name);
         getServersFromJguddi();
         (new Thread(new OtherServerChecker(this))).start();
         startServer();
@@ -66,7 +66,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             System.out.println(name + " Got registry");
         } catch (RemoteException e) {
             System.out.println("WARNING: Failed to get or create RMI Registry");
-            e.printStackTrace();
+            //e.printStackTrace();
         }
 
         try {   //TODO: when there's only one server this will constantly spew remoteExceptions, handle?
@@ -201,7 +201,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
                 try {
                     //TODO send data with heart beat
                     String whoRecieved = null;
-                    whoRecieved = s.recieveHeartBeat(coordinator.getLog(), name);
+                    whoRecieved = s.recieveHeartBeat("", name);
                     numberServersWhoRecieved++;
                     if (!whoRecieved.equals(name)) {
                         System.out.println("Term: " + term + "\t" + name + ": knows that " + whoRecieved + " recieved the heart beat");
@@ -214,8 +214,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             }
             //TODO upon acknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
             if (numberServersWhoRecieved > servers.size()/2) {
+                //TODO only tell "who received" to commit an make sure it's synchronised too!
                 for (IServer server : servers) {
-                    server.commitStagingArea();
+         //           server.commitStagingArea();
                 }
             }
         }
@@ -226,7 +227,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         if (!sentBy.equals(name)) {
             //TODO stage data for commit to DB
             System.out.println("Term: " + term + "\t" + name + ": recieved the heart beat" + " from " + sentBy);
-            coordinator.addToStagingArea(data);
+      //      coordinator.addToStagingArea(data);
             resetElectionTimer();
         }
         return name;
@@ -236,7 +237,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
     //TODO write method for commit Data to DB
     public void commitStagingArea(){
-        coordinator.commitStagingArea();
+ //       coordinator.commitStagingArea();
     }
 
     private void resetElectionTimer() {
