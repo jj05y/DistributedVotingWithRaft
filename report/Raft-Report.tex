@@ -1,0 +1,283 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Programming/Coding Assignment
+% LaTeX Template
+%
+% This template has been downloaded from:
+% http://www.latextemplates.com
+%
+% Original author:
+% Ted Pavlic (http://www.tedpavlic.com)
+%
+% Note:
+% The \lipsum[#] commands throughout this template generate dummy text
+% to fill the template out. These commands should all be removed when 
+% writing assignment content.
+%
+% This template uses a Perl script as an example snippet of code, most other
+% languages are also usable. Configure them in the "CODE INCLUSION 
+% CONFIGURATION" section.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage{fancyhdr} % Required for custom headers
+\usepackage{lastpage} % Required to determine the last page for the footer
+\usepackage{extramarks} % Required for headers and footers
+\usepackage[usenames,dvipsnames]{color} % Required for custom colors
+\usepackage{graphicx} % Required to insert images
+\usepackage{listings} % Required for insertion of code
+\usepackage{courier} % Required for the courier font
+\usepackage{pgfgantt}
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.3in
+
+\linespread{1.1} % Line spacing
+
+% Set up the header and footer
+\pagestyle{fancy}
+\lhead{\homeworkProblemName} % Top left header
+\chead{\hmwkTitle} % Top center head
+\rhead{\hmwkClass } % Top right header
+\lfoot{} % Bottom left footer
+\cfoot{} % Bottom center footer
+\rfoot{Page\ \thepage\ of\ \protect\pageref{LastPage}} % Bottom right footer
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+%----------------------------------------------------------------------------------------
+%	CODE INCLUSION CONFIGURATION
+%----------------------------------------------------------------------------------------
+
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0} % This is the color used for comments
+\lstloadlanguages{Java} % Load Java syntax for listings, for a list of other languages supported see: ftp://ftp.tex.ac.uk/tex-archive/macros/latex/contrib/listings/listings.pdf
+\lstset{language=Java, % Use Java in this example
+        frame=none, % Single frame around code
+        basicstyle=\small\ttfamily, % Use small true type font
+        keywordstyle=[1]\color{Blue}\bf, % Perl functions bold and blue
+        keywordstyle=[2]\color{Purple}, % Perl function arguments purple
+        keywordstyle=[3]\color{Blue}\underbar, % Custom functions underlined and blue
+        identifierstyle=, % Nothing special about identifiers                                         
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small, % Comments small dark green courier font
+        stringstyle=\color{Purple}, % Strings are purple
+        showstringspaces=false, % Don't put marks in string spaces
+        tabsize=8, % 5 spaces per tab
+        %
+        % Put standard Perl functions not included in the default language here
+        morekeywords={rand},
+        %
+        % Put Perl function parameters here
+        morekeywords=[2]{on, off, interp},
+        %
+        % Put user defined functions here
+        morekeywords=[3]{test},
+       	%
+        morecomment=[l][\color{Blue}]{...}, % Line continuation (...) like blue comment
+        numbers=left, % Line numbers on left
+        firstnumber=1, % Line numbers start with line 1
+        numberstyle=\tiny\color{Blue}, % Line numbers are blue and small
+        stepnumber=100 % Line numbers go in steps of 5
+}
+
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT STRUCTURE COMMANDS
+%	Skip this unless you know what you're doing
+%----------------------------------------------------------------------------------------
+
+% Header and footer for when a page split occurs within a problem environment
+\newcommand{\enterProblemHeader}[1]{
+\nobreak\extramarks{#1}{#1}\nobreak
+\nobreak\extramarks{#1}{#1}\nobreak
+}
+
+% Header and footer for when a page split occurs between problem environments
+\newcommand{\exitProblemHeader}[1]{
+\nobreak\extramarks{#1}{#1 continued on next page\ldots}\nobreak
+\nobreak\extramarks{#1}{}\nobreak
+}
+
+\setcounter{secnumdepth}{0} % Removes default section numbers
+\newcounter{homeworkProblemCounter} % Creates a counter to keep track of the number of problems
+
+\newcommand{\homeworkProblemName}{}
+\newenvironment{homeworkProblem}[1][
+ \arabic{homeworkProblemCounter}]{ % Makes a new environment called homeworkProblem which takes 1 argument (custom name) but the default is "Problem #"
+\stepcounter{homeworkProblemCounter} % Increase counter for number of problems
+\renewcommand{\homeworkProblemName}{#1} % Assign \homeworkProblemName the name of the problem
+\section{\homeworkProblemName} % Make a section in the document with the custom problem count
+\enterProblemHeader{} % Header and footer within the environment
+}{
+\exitProblemHeader{} % Header and footer after the environment
+}
+
+\newcommand{\problemAnswer}[1]{ % Defines the problem answer command with the content as the only argument
+\noindent\framebox[\columnwidth][c]{\begin{minipage}{0.98\columnwidth}#1\end{minipage}} % Makes the box around the problem answer and puts the content inside
+}
+
+\newcommand{\homeworkSectionName}{}
+\newenvironment{homeworkSection}[1]{ % New environment for sections within homework problems, takes 1 argument - the name of the section
+\renewcommand{\homeworkSectionName}{#1} % Assign \homeworkSectionName to the name of the section from the environment argument
+\subsection{\homeworkSectionName} % Make a subsection with the custom name of the subsection
+\enterProblemHeader{\homeworkProblemName\ [\homeworkSectionName]} % Header and footer within the environment
+}{
+\enterProblemHeader{\homeworkProblemName} % Header and footer after the environment
+}
+
+
+%----------------------------------------------------------------------------------------
+%	NAME AND CLASS SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\hmwkTitle}{Group Project: A Fault Tolerant Voting Service} % Assignment title
+\newcommand{\hmwkDueDate}{We're not even sure} % Due date
+\newcommand{\hmwkClass}{COMP30220} % Course/class
+\newcommand{\hmwkClassTime}{Distributed Systems} % Class/lecture time
+\newcommand{\hmwkClassInstructor}{Dr. Rem Collier} % Teacher/lecturer
+\newcommand{\hmwkAuthorName}{Group Name: Lamp + Gary} % Your name
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title{
+\vspace{2in}
+\textmd{\textbf{\hmwkClass:\ \hmwkClassTime}}\\
+\normalsize\
+\vspace{0.1in}\large{\textit{\hmwkClassInstructor}}\\
+\vspace{0.2in}
+\textmd{\textbf{\hmwkTitle}}\\
+\small{Due\ on\ \hmwkDueDate}\\
+\vspace{.5in}
+}
+
+\author{\textbf{\hmwkAuthorName}\\
+Joe Duffin - 13738019
+\\Niamh Kavanagh - 12495522
+\\Edwin Keville - 13718661
+\\Gary Mac Elhinney - XXXXXXXX
+}
+
+\date{} % Insert date here if you want it to appear below your name
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+\begin{titlepage}
+\maketitle
+\thispagestyle{empty}
+\end{titlepage}
+
+\newpage
+%----------------------------------------------------------------------------------------
+%	TABLE OF CONTENTS
+%----------------------------------------------------------------------------------------
+
+%\setcounter{tocdepth}{1} % Uncomment this line if you don't want subsections listed in the ToC
+
+\newpage
+\tableofcontents
+\newpage
+
+%----------------------------------------------------------------------------------------
+
+\begin{homeworkProblem}[Project Description]
+This will pretty much be a re-itteration of the proposal, but we're no longer using uddi
+\newpage
+\end{homeworkProblem}
+%----------------------------------------------------------------------------------------
+
+\begin{homeworkProblem}[Technologies Used]
+so info on the technologies and how we used them/what we used them for
+
+\begin{homeworkSection}{Jax-WS}
+To publish server end points
+\end{homeworkSection}
+
+\begin{homeworkSection}{Java RMI}
+to maintain a list of active servers
+\end{homeworkSection}
+
+\begin{homeworkSection}{SQL - @ed "is it sql or mysql?"}
+each server has it's own sql db, used to keep track of votes.
+\end{homeworkSection}
+\newpage
+\end{homeworkProblem}
+
+%----------------------------------------------------------------------------------------
+
+\begin{homeworkProblem}[The Raft Alogorithm]
+
+\begin{homeworkSection}{Basic Principle}
+what is does\\
+and\\
+steps, 
+\begin{enumerate}
+\item start as follower
+\item elect leader
+\item heartbeat
+\item if no heart beat, elect new leader
+\end{enumerate}
+
+\end{homeworkSection}
+
+\begin{homeworkSection}{Electing a leader}
+me me me me
+\end{homeworkSection}
+
+\begin{homeworkSection}{Heart Beats}
+badump
+\end{homeworkSection}
+\newpage
+\end{homeworkProblem}
+
+%----------------------------------------------------------------------------------------
+
+\begin{homeworkProblem}[Our Implementation]
+Consists of the following 3 parts
+\begin{homeworkSection}{Clients}
+look to rmi for current leader\\
+do votes\\
+request winner from leader
+
+\end{homeworkSection}
+
+\begin{homeworkSection}{Servers}
+a server has 3 parts
+
+\begin{description}
+\item \textbf{The Raft Element}
+\item \textbf{The Coordinator}
+\item \textbf{The Database}
+\end{description}
+
+\end{homeworkSection}
+
+\begin{homeworkSection}{jgUDDI}
+because jUDDI was too hard
+\end{homeworkSection}
+\newpage
+\end{homeworkProblem}
+
+%----------------------------------------------------------------------------------------
+
+\begin{homeworkProblem}[Conclusion]
+
+it was fab
+\end{homeworkProblem}
+
+
+
+\end{document}
