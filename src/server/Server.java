@@ -284,7 +284,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     //TODO write method for commit Data to DB
     public void commitStagingArea() {
         System.out.println(name + ": Commiting if needed in staging area");
-        //       coordinator.commitStagingArea();
+        coordinator.commitStagingArea();
     }
 
     private void resetElectionTimer() {

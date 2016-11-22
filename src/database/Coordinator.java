@@ -47,7 +47,9 @@ public class Coordinator {
         System.out.println("voting for : " + toDo);
         for (String candiddate : toDo.split(",")) {
             //TODO make sure not voting for null
-           // db.voteFor(candiddate);
+            if (Arrays.asList(candidates).contains(candiddate)) { //only vote for valid candidates
+                 db.voteFor(candiddate);
+            }
         }
     }
 
