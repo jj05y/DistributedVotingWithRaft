@@ -36,7 +36,11 @@ public class Coordinator {
     }
 
     public void commitStagingArea() {
-        //find difference
+
+        //if no difference, dont bother
+        if (stagingArea.equals(transactionsLog)) return;
+
+        // else find difference
         String newLog = stagingArea;
         String toDo = (stagingArea.replace(transactionsLog, ""));
         transactionsLog = newLog;

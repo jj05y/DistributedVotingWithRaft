@@ -52,7 +52,7 @@ public class Database {
             Class.forName("org.sqlite.JDBC");
             c = DriverManager.getConnection("jdbc:sqlite:"+dbFileName);
             c.setAutoCommit(false);
-fu
+
             stmt = c.createStatement();
             String sql = "INSERT INTO "+ TABLE_NAME +" (ID,NAME,VOTES) " +
                         "VALUES (NULL , '" + name + "', 0);";

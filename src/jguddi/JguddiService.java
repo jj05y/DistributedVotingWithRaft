@@ -20,7 +20,7 @@ public class JguddiService implements IJguddiService {
 
     @Override
     public List<String> getEndpoints() {
-        return endpoints;
+        return new Vector<>(endpoints);
     }
 
     @Override
