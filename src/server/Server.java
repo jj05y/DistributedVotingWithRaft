@@ -261,7 +261,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
         synchronized (servers) {
             for (IRaftServer s : servers) {
                 try {
-                    //TODO send data with heart beat
+                    //the current log is appended and sent around
                     String whoRecieved = null;
                     whoRecieved = s.recieveHeartBeat(coordinator.getLog()+ latestVotes, name);
                     latestVotes = "";
@@ -295,10 +295,11 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
 
     public String recieveHeartBeat(String data, String sentBy) {
         if (!sentBy.equals(name)) {
-            //TODO stage data for commit to DB
+
             System.out.println("Term: " + term + "\t" + name + ": recieved the heart beat" + " from " + sentBy);
             resetElectionTimer();
         }
+        //stage the data for committing
         if (!data.equals("")) coordinator.addToStagingArea(data);
         return name;
 
