@@ -260,7 +260,10 @@ Explicit Steps
 %----------------------------------------------------------------------------------------
 
 \begin{homeworkProblem}[Our Implementation]
-Consists of the following 3 parts
+We loosly interpreted the Raft algorithm to design a distributed voting service. When I say voting I mean a voting service distinct to that of the leader election. A system such as this could be used for keeping track of the number of votes for each candidate in a presedential election.\\
+We took from raft the notion of leader election and the heart beat messages but in order to keep the system as fault tolerant as possible we had to bolster the code with lots of support.\\
+
+Our implementation has 3 core components.
 
 
 \begin{homeworkSection}{jgUDDI}
