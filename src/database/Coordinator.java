@@ -14,7 +14,8 @@ public class Coordinator {
     String transactionsLog; //123
     String stagingArea; //12345
     Database db;
-    String[] candidates = {"Mary, Jacinta, Niamh, Holly"};
+    String[] candidates = {"Mary", "Jacinta", "Niamh", "Holly"
+    };
 
 
     public Coordinator(String name) {
@@ -44,16 +45,16 @@ public class Coordinator {
         String newLog = stagingArea;
         String toDo = (stagingArea.replace(transactionsLog, ""));
         transactionsLog = newLog;
-        System.out.println("voting for : " + toDo);
-        for (String candiddate : toDo.split(",")) {
+        System.out.println("Adding these votes to db: " + toDo);
+        for (String candidate : toDo.split(",")) {
             //TODO make sure not voting for null
-            if (Arrays.asList(candidates).contains(candiddate)) { //only vote for valid candidates
-                 db.voteFor(candiddate);
+            if (Arrays.asList(candidates).contains(candidate)) { //only vote for valid candidates
+                 db.voteFor(candidate);
             }
         }
     }
 
-    //public String getVotingResults() {
-       // return db.printAllRecords();
-    //}
+    public String getCurrentResults() {
+        return db.printAllRecords();
+    }
 }

@@ -15,4 +15,8 @@ public interface IJguddiService extends Remote {
     void resetEndpoints(List<String> eps) throws RemoteException;
 
     void removeEndpoint(String ep) throws  RemoteException;
+
+    String getLeaderEndpoint() throws RemoteException;
+
+    void setLeaderEndpoint(String leaderEndpoint) throws RemoteException;
 }

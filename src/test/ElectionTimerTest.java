@@ -10,9 +10,9 @@ public class ElectionTimerTest {
 
     public static void main (String[] args) {
 
-        Registry.SERVERS.put("Ted", new Server("Ted"));
-        Registry.SERVERS.put("Bob", new Server("Bob"));
-        Registry.SERVERS.put("Frank", new Server("Frank"));
+        Registry.SERVERS.put("Ted", new Server("Ted", ""));
+        Registry.SERVERS.put("Bob", new Server("Bob", ""));
+        Registry.SERVERS.put("Frank", new Server("Frank", ""));
 
         for (Server s : Registry.SERVERS.values()) {
             s.startServer();

@@ -126,16 +126,7 @@ public class Database {
                 String  name = rs.getString("name");
                 int votes  = rs.getInt("votes");
 
- //               allRecords.concat("ID = "+id + "\n" + "NAME = " + name + "\n" + "VOTES = " + votes + "\n\n");
-                System.out.println( allRecords.concat("ID = " + id ));
-                allRecords.concat("\n");
-                System.out.println( allRecords.concat("NAME = " + name ));
-                allRecords.concat("\n");
-                System.out.println( allRecords.concat("VOTES = " + votes ));
-                allRecords.concat("\n");
-                allRecords.concat("\n");
-                System.out.println();
-
+                allRecords += name + ": " + votes + " votes\n";
             }
             rs.close();
             stmt.close();
@@ -144,7 +135,6 @@ public class Database {
             System.err.println("print all records" +  e.getClass().getName() + ": " + e.getMessage() );
             System.exit(0);
         }
-        System.out.println(allRecords);
         return allRecords;
     }
 

@@ -2,7 +2,6 @@ package deployment;
 
 import jguddi.IJguddiService;
 import jguddi.JguddiService;
-import server.IServer;
 import server.Server;
 
 import javax.xml.ws.Endpoint;
@@ -34,7 +33,7 @@ public class ServerDeployer {
 
         int port = rand.nextInt(20000) + 30000; //Assign random port to the server
         String endpoint = "http://localhost:" + port + "/RaftServer/" + name;
-        Endpoint.publish(endpoint, new Server(name));
+        Endpoint.publish(endpoint, new Server(name, endpoint));
         System.out.println("Published " + name + " on " + endpoint);
 
 

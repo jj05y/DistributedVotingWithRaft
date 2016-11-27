@@ -1,5 +1,6 @@
 package jguddi;
 
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Vector;
 
@@ -8,6 +9,7 @@ import java.util.Vector;
  */
 public class JguddiService implements IJguddiService {
     private List<String> endpoints;
+    private String leaderEndpoint;
 
     public JguddiService() {
         this.endpoints = new Vector<>();
@@ -21,6 +23,16 @@ public class JguddiService implements IJguddiService {
     @Override
     public List<String> getEndpoints() {
         return new Vector<>(endpoints);
+    }
+
+    @Override
+    public String getLeaderEndpoint() throws RemoteException {
+        return leaderEndpoint;
+    }
+
+    @Override
+    public void setLeaderEndpoint(String leaderEndpoint) throws RemoteException {
+        this.leaderEndpoint = leaderEndpoint;
     }
 
     @Override

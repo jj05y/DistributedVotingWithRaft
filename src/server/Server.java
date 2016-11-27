@@ -25,13 +25,17 @@ import java.util.Vector;
  * Created by joe on 05/11/16.
  */
 
-@WebService(name = "IServer")
-public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServer, IOtherServerCheckerCallBack {
+@WebService(name = "IRaftServer")
+public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaftServer, IOtherServerCheckerCallBack, IVotingService {
     public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
-    private List<IServer> servers;      //Other servers on Jguddi registry
-    List<String> serverEndpoints;
+    private List<IRaftServer> servers;      //Other servers on Jguddi registry
+    private List<String> serverEndpoints;
+    private String leaderEndpoint;
+    private String myEndpoint;
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
+    private String latestVotes;
+
 
     private enum State {CANDIDATE, LEADER, FOLLOWER}
 
@@ -44,18 +48,14 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
     static IJguddiService staticService;
 
 
-    public Server() {
-        setup("Server" + (new Random()).nextInt(10000));
-    }
+    public Server(){    }
 
-    public Server(String name) {
-        setup(name);
-    }
-
-    private void setup(String name) {
+    public Server(String name, String myEndpoint) {
         this.name = name;
+        this.myEndpoint = myEndpoint;
         servers = new Vector<>();
         serverEndpoints = new Vector<>();
+        latestVotes = "";
         coordinator = new Coordinator(name);
         getServersFromJguddi();
         (new Thread(new OtherServerChecker(this))).start();
@@ -87,9 +87,11 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
                             //Now need to pop in all servers known to me at this time
                             // I'm not the leader, but i saved the day!
-                            for (String serverEndpoint : serverEndpoints){
+                            for (String serverEndpoint : serverEndpoints) {
                                 staticService.addEndpoint(serverEndpoint);
                             }
+                            staticService.setLeaderEndpoint(leaderEndpoint);
+                            System.out.println(name + ": told jguddi that i am the leader");
                         } else {
                             System.err.println("registry null");
                         }
@@ -106,57 +108,60 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         } catch (RemoteException re3) {
             System.err.println(name + ": TOTALLY FAILED at gjuddi");
         }
+        //now registry is set
+        try {   //TODO: when there's only one server this will constantly spew remoteExceptions, handle?
+            IJguddiService jguddi = null;
+            for (String service : registry.list()) {
+                jguddi = (IJguddiService) registry.lookup(service);
+            }
+            if (jguddi != null) {
+                serverEndpoints = jguddi.getEndpoints();
+                leaderEndpoint = jguddi.getLeaderEndpoint();
+            }
+        } catch (RemoteException re) {
+            System.err.println("remote exception in getting jguddi");
+            //  re.printStackTrace();
+        } catch (NotBoundException ne) {
+            System.err.println("Service Not Bound, server is dead");
+        }
+        //get the list of servers from the list of end points
+        servers.clear();
+        try {
+            Vector<String> deadEndpoints = new Vector<>();
+            for (String ep : serverEndpoints) {
+                try {
+                    String url = ep + "?wsdl";
+                    String qname = "http://server/";
+                    String qname2 = "ServerService";
+                    Service service = Service.create(new URL(url), new QName(qname, qname2));
+                    servers.add(service.getPort(IRaftServer.class));
+                } catch (WebServiceException wse) {
+                    System.err.println("Web service no longer exists, must be dead");
+                    deadEndpoints.add(ep);
+                }
+            }
 
-            try {   //TODO: when there's only one server this will constantly spew remoteExceptions, handle?
+            //clean up
+            try {
                 IJguddiService jguddi = null;
                 for (String service : registry.list()) {
                     jguddi = (IJguddiService) registry.lookup(service);
                 }
-                if (jguddi != null) serverEndpoints = jguddi.getEndpoints();
+                for (String deadEnpoint : deadEndpoints) {
+                    System.out.println("Removing Dead Endpoint " + deadEnpoint);
+                    if (jguddi != null) jguddi.removeEndpoint(deadEnpoint);
+                }
             } catch (RemoteException re) {
-                System.err.println("remote exception in getting jguddi");
-                //  re.printStackTrace();
+                System.err.println("remote exception in clearing dead enpoints");
             } catch (NotBoundException ne) {
                 System.err.println("Service Not Bound, server is dead");
             }
-            //get the list of servers from the list of end points
-            servers.clear();
-            try {
-                Vector<String> deadEndpoints = new Vector<>();
-                for (String ep : serverEndpoints) {
-                    try {
-                        String url = ep + "?wsdl";
-                        String qname = "http://server/";
-                        String qname2 = "ServerService";
-                        Service service = Service.create(new URL(url), new QName(qname, qname2));
-                        servers.add(service.getPort(IServer.class));
-                    } catch (WebServiceException wse) {
-                        System.err.println("Web service no longer exists, must be dead");
-                        deadEndpoints.add(ep);
-                    }
-                }
 
-                //clean up
-                try {
-                    IJguddiService jguddi = null;
-                    for (String service : registry.list()) {
-                        jguddi = (IJguddiService) registry.lookup(service);
-                    }
-                    for (String deadEnpoint : deadEndpoints) {
-                        System.out.println("Removing Dead Endpoint " + deadEnpoint);
-                        if (jguddi != null) jguddi.removeEndpoint(deadEnpoint);
-                    }
-                } catch (RemoteException re) {
-                    System.err.println("remote exception in clearing dead enpoints");
-                } catch (NotBoundException ne) {
-                    System.err.println("Service Not Bound, server is dead");
-                }
-
-            } catch (MalformedURLException mue) {
-                System.err.println("Bad Url::");
-            }
-            System.out.println("There are now " + servers.size() + " server(s)");
+        } catch (MalformedURLException mue) {
+            System.err.println("Bad Url::");
         }
+        System.out.println("There are now " + servers.size() + " server(s)");
+    }
 
 
     public void startServer() {
@@ -177,7 +182,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         term++;
         int numVotes = 0;
         synchronized (servers) {
-            for (IServer s : servers) {
+            for (IRaftServer s : servers) {
                 try {
                     numVotes += s.requestVote(term, this.name);
                 } catch (WebServiceException wse) {
@@ -194,6 +199,24 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             //Winner winner chicken dinner
             state = State.LEADER;
             System.out.println("Term: " + term + "\t" + name + ": is now leader for new term " + term);
+
+
+            //need to grab an instance of jguddi and tell it i'm the leader
+            Registry registry;
+            try {
+                registry = LocateRegistry.getRegistry();
+                IJguddiService jguddi = null;
+                for (String service : registry.list()) {
+                    jguddi = (IJguddiService) registry.lookup(service);
+                }
+                jguddi.setLeaderEndpoint(myEndpoint);
+            } catch (RemoteException re) {
+                System.err.println(name + "can't tell registry i'm the new leader, will step down");
+                return;  // dont start heartbeat new election will happen
+            } catch (NotBoundException nbe) {
+                System.err.println(name + "can't tell registry i'm the new leader, will step down");
+                return;  // dont start heartbeat new election will happen
+            }
 
             //I am now the leader!!! must start heat beat or my followers will try and take over :(
             heartBeat = new Thread(new HeartBeat(this));
@@ -234,13 +257,14 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
 
         //need to tell the other serverEndpoints that we're alive
         int numberServersWhoRecieved = 0;
-        List<IServer> serversWhoRecieved = new Vector<>();
+        List<IRaftServer> serversWhoRecieved = new Vector<>();
         synchronized (servers) {
-            for (IServer s : servers) {
+            for (IRaftServer s : servers) {
                 try {
                     //TODO send data with heart beat
                     String whoRecieved = null;
-                    whoRecieved = s.recieveHeartBeat("", name);
+                    whoRecieved = s.recieveHeartBeat(coordinator.getLog()+ latestVotes, name);
+                    latestVotes = "";
                     numberServersWhoRecieved++;
                     if (!whoRecieved.equals(name)) {
                         System.out.println("Term: " + term + "\t" + name + ": knows that " + whoRecieved + " recieved the heart beat");
@@ -254,7 +278,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
             // upon acknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
             if (numberServersWhoRecieved > servers.size() / 2) {
                 //tell other servers to commit an make sure it's synchronised too!
-                for (IServer server : servers) {
+                for (IRaftServer server : servers) {
                     try {
                         server.commitStagingArea();
                     } catch (ClientTransportException e) {
@@ -273,17 +297,16 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         if (!sentBy.equals(name)) {
             //TODO stage data for commit to DB
             System.out.println("Term: " + term + "\t" + name + ": recieved the heart beat" + " from " + sentBy);
-                  if (!data.equals("")) coordinator.addToStagingArea(data);
             resetElectionTimer();
         }
+        if (!data.equals("")) coordinator.addToStagingArea(data);
         return name;
 
 
     }
 
-    //TODO write method for commit Data to DB
+    //if a majority recieved the heart beat, then the data that came with that will be commited to db
     public void commitStagingArea() {
-        System.out.println(name + ": Commiting if needed in staging area");
         coordinator.commitStagingArea();
     }
 
@@ -328,9 +351,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         @Override
         public void run() {
             try {
-                //TODO while true cos a heart should beat for ever
-                int i = 0;
-                while (i++ < 30) {
+
+
+                while (true) {
                     Thread.sleep(PULSE);
                     context.beatHeart();
                 }
@@ -361,36 +384,14 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IServ
         }
     }
 
-    private class JguddiServer implements Runnable {
-        private Registry registry;
+    @Override
+    public void castVote(String name) {
+        latestVotes += (name+",");
+    }
 
-        public JguddiServer() {
-            registry = null;
-        }
-
-        @Override
-        public void run() {
-            try {
-                registry = LocateRegistry.createRegistry(1099);
-            } catch (RemoteException re) {
-                try {
-                    registry = LocateRegistry.getRegistry();
-                } catch (RemoteException e) {
-                    System.err.println("Failure gettting registry::");
-                }
-
-            }
-            try {
-                IJguddiService service = (IJguddiService) UnicastRemoteObject.exportObject(new JguddiService(), 0);
-                if (registry != null) {
-                    registry.bind("jguddi", service);
-                }
-            } catch (RemoteException e) {
-
-            } catch (AlreadyBoundException abe) {
-
-            }
-        }
+    @Override
+    public String getCurrentVotes() {
+        return coordinator.getCurrentResults();
     }
 
 }
