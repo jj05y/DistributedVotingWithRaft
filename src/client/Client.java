@@ -28,10 +28,10 @@ public class Client {
 
         Scanner in = new Scanner(System.in);
         String input;
-
+        System.out.println("Enter \"print\" or a name to vote for from: Mary, Jacinta, Niamh, Holly");
         while (!(input = in.nextLine()).equals("quit")) {
-
             System.out.println((!input.equals("print"))?"Client attempting to vote for: " + input:"Client Requesting current votes");
+
 
             if (Arrays.asList(validInputs).contains(input)) {
                 Registry registry;
@@ -45,10 +45,8 @@ public class Client {
                     }
                 } catch (RemoteException e) {
                     System.err.println("No registry available to client");
-                    System.exit(1);
                 } catch (NotBoundException e) {
                     System.err.println("Jguddi not bound");
-                    System.exit(1);
                 }
 
                 if (jguddiService != null) {
@@ -58,10 +56,10 @@ public class Client {
                         String qname = "http://server/";
                         String qname2 = "ServerService";
                         Service service = Service.create(new URL(url), new QName(qname, qname2));
-                        System.out.println("leader endpoint: " + url);
+                        System.out.println("Voting to this endpoint: " + url);
                         raftServer = service.getPort(IRaftServer.class);
                     } catch (WebServiceException wse) {
-                        System.err.println("Can't get leader endpoint :(");
+                        System.err.println("Can't get endpoint :(");
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     } catch (MalformedURLException e) {
@@ -80,6 +78,7 @@ public class Client {
             } else {
                 System.out.println(input + " is not a valid candidate or print option");
             }
+            System.out.println("Enter a name to vote for from: Mary, Jacinta, Niamh, Holly");
 
 
         }

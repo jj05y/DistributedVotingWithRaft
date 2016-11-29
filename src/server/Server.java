@@ -28,12 +28,14 @@ import java.util.Vector;
 @WebService(name = "IRaftServer")
 public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaftServer, IOtherServerCheckerCallBack, IVotingService {
     public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
+    public static final int RAND_ELEC_TIME = 1500;
+    private static int PULSE = 500;
+
     private List<IRaftServer> servers;      //Other servers on Jguddi registry
     private List<String> serverEndpoints;
     private String leaderEndpoint;
     private String myEndpoint;
-    public static final int RAND_ELEC_TIME = 1500;
-    private static int PULSE = 500;
+
     private String latestVotes;
 
 
@@ -48,7 +50,8 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
     static IJguddiService staticService;
 
 
-    public Server(){    }
+    public Server() {
+    }
 
     public Server(String name, String myEndpoint) {
         this.name = name;
@@ -90,8 +93,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
                             for (String serverEndpoint : serverEndpoints) {
                                 staticService.addEndpoint(serverEndpoint);
                             }
+
                             staticService.setLeaderEndpoint(leaderEndpoint);
-                            System.out.println(name + ": told jguddi that i am the leader");
+                            System.out.println(name + ": told jguddi who the leader is");
                         } else {
                             System.err.println("registry null");
                         }
@@ -210,11 +214,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
                     jguddi = (IJguddiService) registry.lookup(service);
                 }
                 jguddi.setLeaderEndpoint(myEndpoint);
+                System.out.println(name + " :told jguddi that I am the new leader");
             } catch (RemoteException re) {
-                System.err.println(name + "can't tell registry i'm the new leader, will step down");
+                System.err.println(name + " can't tell registry i'm the new leader (remote exception), will step down");
                 return;  // dont start heartbeat new election will happen
             } catch (NotBoundException nbe) {
-                System.err.println(name + "can't tell registry i'm the new leader, will step down");
+                System.err.println(name + " can't tell registry i'm the new leader (not bound exception), will step down");
                 return;  // dont start heartbeat new election will happen
             }
 
@@ -233,11 +238,12 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
     public int requestVote(int term, String name) {
         //if I havent voted in the requesting serverEndpoints term return a vote
 
+
         // If I'm voting for myself
         if (name.equals(this.name)) {
             System.out.println("Term: " + term + "\t" + this.name + ": voted for themselves");
             return 1;
-        } else {    // If I'm not voting for itself
+        } else if (state == State.FOLLOWER) {    // If I'm not voting for itself and i'm a follower
             if (this.term < term) {
                 System.out.println(name + " is asking " + this.name + " to vote for them");
                 System.out.println("Term: " + term + "\t" + this.name + ": voted for " + name);
@@ -248,8 +254,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
             }
         }
 
+
         return 0;
-    }
+}
 
     public void beatHeart() {
 
@@ -263,8 +270,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
                 try {
                     //the current log is appended and sent around
                     String whoRecieved = null;
-                    whoRecieved = s.recieveHeartBeat(coordinator.getLog()+ latestVotes, name);
-                    latestVotes = "";
+                    whoRecieved = s.recieveHeartBeat(coordinator.getLog() + latestVotes, name);
                     numberServersWhoRecieved++;
                     if (!whoRecieved.equals(name)) {
                         System.out.println("Term: " + term + "\t" + name + ": knows that " + whoRecieved + " recieved the heart beat");
@@ -275,6 +281,9 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
                 }
 
             }
+            //after telling every other server what to do, reset latest votes to null
+            latestVotes = "";
+
             // upon acknowledgement of reciept from majority, update my own data base, and send notification to all to update their database too
             if (numberServersWhoRecieved > servers.size() / 2) {
                 //tell other servers to commit an make sure it's synchronised too!
@@ -300,6 +309,7 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
             resetElectionTimer();
         }
         //stage the data for committing
+        if (!data.equals("")) System.out.println(name + "adding this data to staging area: " + data);
         if (!data.equals("")) coordinator.addToStagingArea(data);
         return name;
 
@@ -318,76 +328,75 @@ public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaft
     }
 
 
-    private class ElectionTimer implements Runnable {
+private class ElectionTimer implements Runnable {
 
-        private IElectionTimerCallBack context;
+    private IElectionTimerCallBack context;
 
-        public ElectionTimer(IElectionTimerCallBack context) {
-            this.context = context;
-        }
-
-        @Override
-        public void run() {
-            try {
-                Random rand = new Random();
-                int time = rand.nextInt(RAND_ELEC_TIME) + RAND_ELEC_TIME;
-                Thread.sleep((long) time);
-                context.electionTimerUp();
-            } catch (InterruptedException e) {
-                // no need to handle, I think that if the thread gets interupted,
-                // then a heart beat has arrived, all is well
-            }
-        }
-    }
-
-    private class HeartBeat implements Runnable {
-
-
-        IHeartBeatCallBack context;
-
-        public HeartBeat(IHeartBeatCallBack context) {
-            this.context = context;
-        }
-
-        @Override
-        public void run() {
-            try {
-
-
-                while (true) {
-                    Thread.sleep(PULSE);
-                    context.beatHeart();
-                }
-            } catch (InterruptedException e) {
-                //TODO do i need to handle?
-            }
-        }
-    }
-
-    private class OtherServerChecker implements Runnable {
-
-        IOtherServerCheckerCallBack context;
-
-        public OtherServerChecker(IOtherServerCheckerCallBack context) {
-            this.context = context;
-        }
-
-        @Override
-        public void run() {
-            try {
-                while (true) {
-                    context.getServersFromJguddi();
-                    Thread.sleep(OTHER_SERVER_CHECK_PAUSE);
-                }
-            } catch (InterruptedException e) {
-                //TODO do i need to handle?
-            }
-        }
+    public ElectionTimer(IElectionTimerCallBack context) {
+        this.context = context;
     }
 
     @Override
+    public void run() {
+        try {
+            Random rand = new Random();
+            int time = rand.nextInt(RAND_ELEC_TIME) + RAND_ELEC_TIME;
+            Thread.sleep((long) time);
+            context.electionTimerUp();
+        } catch (InterruptedException e) {
+            // no need to handle, I think that if the thread gets interupted,
+            // then a heart beat has arrived, all is well
+        }
+    }
+}
+
+private class HeartBeat implements Runnable {
+
+
+    IHeartBeatCallBack context;
+
+    public HeartBeat(IHeartBeatCallBack context) {
+        this.context = context;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                Thread.sleep(PULSE);
+                context.beatHeart();
+            }
+        } catch (InterruptedException e) {
+            //TODO do i need to handle?
+        }
+    }
+}
+
+private class OtherServerChecker implements Runnable {
+
+    IOtherServerCheckerCallBack context;
+
+    public OtherServerChecker(IOtherServerCheckerCallBack context) {
+        this.context = context;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                context.getServersFromJguddi();
+                Thread.sleep(OTHER_SERVER_CHECK_PAUSE);
+            }
+        } catch (InterruptedException e) {
+            //TODO do i need to handle?
+        }
+    }
+
+}
+
+    @Override
     public void castVote(String name) {
-        latestVotes += (name+",");
+        latestVotes += (name + ",");
     }
 
     @Override

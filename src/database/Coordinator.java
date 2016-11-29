@@ -37,13 +37,12 @@ public class Coordinator {
     }
 
     public void commitStagingArea() {
-
         //if no difference, dont bother
         if (stagingArea.equals(transactionsLog)) return;
 
         // else find difference
         String newLog = stagingArea;
-        String toDo = (stagingArea.replace(transactionsLog, ""));
+        String toDo = (stagingArea.replaceFirst(transactionsLog, ""));
         transactionsLog = newLog;
         System.out.println("Adding these votes to db: " + toDo);
         for (String candidate : toDo.split(",")) {
