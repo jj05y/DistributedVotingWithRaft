@@ -2,7 +2,6 @@ package client;
 
 import jguddi.IJguddiService;
 import server.IRaftServer;
-import server.IVotingService;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;

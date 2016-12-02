@@ -26,7 +26,7 @@ import java.util.Vector;
  */
 
 @WebService(name = "IRaftServer")
-public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaftServer, IOtherServerCheckerCallBack, IVotingService {
+public class Server implements IElectionTimerCallBack, IHeartBeatCallBack, IRaftServer, IOtherServerCheckerCallBack {
     public static final int OTHER_SERVER_CHECK_PAUSE = 1000;
     public static final int RAND_ELEC_TIME = 1500;
     private static int PULSE = 500;
